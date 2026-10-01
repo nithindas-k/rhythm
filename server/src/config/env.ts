@@ -9,7 +9,7 @@ const envSchema = z.object({
 
   MONGO_URI: z.string().url('MONGO_URI must be a valid URL'),
 
-  REDIS_URL: z.string().url('REDIS_URL must be a valid URL'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
 
   JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET must be at least 16 chars'),
   JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 chars'),
