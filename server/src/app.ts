@@ -18,6 +18,9 @@ import rootRouter from './routes/index';
 export function createApp(): Application {
   const app = express();
 
+  // ── Reverse Proxy Trust (Required for Render, Heroku, etc.) ─────────────────
+  app.set('trust proxy', 1);
+
   // ── Security headers ────────────────────────────────────────────────────────
   app.use(helmet());
 
