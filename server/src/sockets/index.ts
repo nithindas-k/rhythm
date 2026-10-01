@@ -2,7 +2,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { getRedisClient, isExternalRedisConnected } from '../config/redis';
-import { env } from '../config/env';
+import { corsOriginDelegate } from '../config/cors';
 import { logger } from '../utils/logger';
 import { socketAuthMiddleware, AuthenticatedSocket } from './middlewares/socketAuth';
 import { registerPresenceHandlers } from './handlers/presence.handler';
@@ -14,7 +14,7 @@ let ioInstance: Server | null = null;
 export function initSocketServer(httpServer: http.Server): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: corsOriginDelegate,
       credentials: true,
     },
     transports: ['websocket', 'polling'],

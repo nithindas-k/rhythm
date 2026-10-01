@@ -6,6 +6,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 
 import { env } from './config/env';
+import { corsOriginDelegate } from './config/cors';
 import { requestLogger } from './middlewares/requestLogger';
 import { apiRateLimiter } from './middlewares/rateLimiter';
 import { globalErrorHandler } from './middlewares/globalErrorHandler';
@@ -27,7 +28,7 @@ export function createApp(): Application {
   // ── CORS ────────────────────────────────────────────────────────────────────
   app.use(
     cors({
-      origin: env.CLIENT_URL,
+      origin: corsOriginDelegate,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
