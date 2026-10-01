@@ -26,7 +26,6 @@ export const RoomPage: React.FC = () => {
 
   const {
     isInRoom,
-    currentSong,
     setRoom,
     updatePlaybackState,
     addMember,
