@@ -14,6 +14,9 @@ export class AudioFilePlaybackEngine implements PlaybackEngine {
     if (!this.audio) {
       const audio = new Audio();
       audio.preload = 'auto';
+      audio.preservesPitch = true;
+      (audio as any).mozPreservesPitch = true;
+      (audio as any).webkitPreservesPitch = true;
 
       audio.addEventListener('loadedmetadata', () => {
         if (audio.duration && !isNaN(audio.duration)) {

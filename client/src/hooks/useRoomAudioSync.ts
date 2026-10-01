@@ -269,13 +269,13 @@ export function useRoomAudioSync(roomCode: string) {
       const actualMs = engine.getCurrentPositionMs();
       const drift = Math.abs(actualMs - expectedMs);
 
+      // When drift is within acceptable tolerance (<200ms), lock to normal 1.0x speed
       if (drift < SYNC_CONSTANTS.DRIFT_IGNORE_MS) {
-        if (drift < SYNC_CONSTANTS.DRIFT_RESTORE_RATE_MS) {
-          engine.setPlaybackRate(SYNC_CONSTANTS.NORMAL_PLAYBACK_RATE);
-        }
+        engine.setPlaybackRate(SYNC_CONSTANTS.NORMAL_PLAYBACK_RATE);
         return;
       }
 
+      // Gentle subtle nudge (1.02x / 0.98x) for moderate drift
       if (drift <= SYNC_CONSTANTS.DRIFT_SEEK_THRESHOLD_MS) {
         engine.setPlaybackRate(
           actualMs < expectedMs
@@ -285,6 +285,7 @@ export function useRoomAudioSync(roomCode: string) {
         return;
       }
 
+      // Large drift (>800ms) - perform quick micro-seek to align immediately
       const now = Date.now();
       if (now - lastDriftSeekRef.current >= SYNC_CONSTANTS.DRIFT_SEEK_COOLDOWN_MS) {
         lastDriftSeekRef.current = now;
@@ -293,7 +294,10 @@ export function useRoomAudioSync(roomCode: string) {
       }
     }, SYNC_CONSTANTS.DRIFT_CHECK_INTERVAL_MS);
 
-    return () => clearInterval(driftInterval);
+    return () => {
+      clearInterval(driftInterval);
+      engineRef.current?.setPlaybackRate(SYNC_CONSTANTS.NORMAL_PLAYBACK_RATE);
+    };
   }, [playbackState?.isPlaying, playbackState?.scheduledAt, playbackState?.positionMs]);
 
   // ── 8. Unlock Audio Gate ──────────────────────────────────────────────────
