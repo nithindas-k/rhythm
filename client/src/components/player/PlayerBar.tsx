@@ -11,6 +11,7 @@ import {
   ListMusic,
   Plus,
   Music,
+  Maximize2,
 } from 'lucide-react';
 import { usePlayerStore } from '../../store/playerStore';
 import { useRoomStore } from '../../store/roomStore';
@@ -19,6 +20,7 @@ import { ProgressSlider } from './ProgressSlider';
 import { VolumeControl } from './VolumeControl';
 import { QueueDrawer } from './QueueDrawer';
 import { AddToPlaylistDialog } from './AddToPlaylistDialog';
+import { NowPlayingModal } from './NowPlayingModal';
 import { useFavorites, useToggleFavorite } from '../../features/favorites/useFavorites';
 import { cn } from '../../utils/cn';
 
@@ -49,6 +51,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onSeek }) => {
   } = usePlayerStore();
 
   const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+  const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
   const { data: favoritesData } = useFavorites();
   const { toggle: toggleFav } = useToggleFavorite();
   const { isInRoom } = useRoomStore();
@@ -68,29 +71,41 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onSeek }) => {
     <>
       <div className="fixed bottom-[53px] md:bottom-0 left-0 right-0 z-40 bg-[var(--surface-overlay)]/95 backdrop-blur-xl border-t border-[var(--border)] px-4 md:px-6 py-2.5 shadow-2xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Left Track Info */}
+          {/* Left Track Info (Click to open full player window) */}
           <div className="flex items-center gap-3 w-1/4 min-w-[140px] md:min-w-[200px]">
             {currentSong ? (
               <>
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-[var(--surface-elevated)] shrink-0 shadow-md relative group">
+                <div
+                  onClick={() => setNowPlayingOpen(true)}
+                  className="w-12 h-12 rounded-xl overflow-hidden bg-[var(--surface-elevated)] shrink-0 shadow-md relative group cursor-pointer"
+                  title="Open Full Player Window"
+                >
                   {currentSong.coverUrl ? (
                     <img
                       src={currentSong.coverUrl}
                       alt={currentSong.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[var(--foreground-dim)]">
                       <Music className="w-5 h-5" />
                     </div>
                   )}
+                  {/* Subtle expand icon overlay on hover */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                    <Maximize2 className="w-4 h-4 drop-shadow" />
+                  </div>
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[var(--foreground)] truncate hover:underline cursor-pointer">
+                <div
+                  onClick={() => setNowPlayingOpen(true)}
+                  className="min-w-0 flex-1 cursor-pointer group"
+                  title="Open Full Player Window"
+                >
+                  <p className="text-sm font-bold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">
                     {currentSong.title}
                   </p>
-                  <p className="text-xs text-[var(--foreground-dim)] truncate">
+                  <p className="text-xs text-[var(--foreground-dim)] truncate group-hover:text-[var(--foreground-muted)] transition-colors">
                     {currentSong.artist}
                   </p>
                 </div>
@@ -263,6 +278,13 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({ onSeek }) => {
         isOpen={playlistDialogOpen}
         onClose={() => setPlaylistDialogOpen(false)}
         song={currentSong}
+      />
+
+      {/* Full-Screen / Expanded Solo Now Playing Modal Window */}
+      <NowPlayingModal
+        isOpen={nowPlayingOpen}
+        onClose={() => setNowPlayingOpen(false)}
+        onSeek={onSeek}
       />
     </>
   );

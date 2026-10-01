@@ -16,6 +16,7 @@ import { formatTime } from '../../../utils/formatTime';
 import { ProgressSlider } from '../../../components/player/ProgressSlider';
 import { SongPickerModal } from './SongPickerModal';
 import { socketService } from '../../../services/socket.service';
+import { AudioWaveEffect } from './AudioWaveEffect';
 
 interface RoomPlayerProps {
   currentPositionMs: number;
@@ -120,7 +121,7 @@ export const RoomPlayer: React.FC<RoomPlayerProps> = ({
       {/* Main Content Area - Perfectly Centered */}
       <div className="flex-1 flex flex-col items-center justify-center w-full py-4 min-h-0">
         {currentSong ? (
-          <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-4 sm:gap-5">
+          <div className="w-full max-w-[460px] mx-auto flex flex-col items-center gap-4 sm:gap-5">
             {/* Album Artwork */}
             <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-md shrink-0">
               {currentSong.coverUrl ? (
@@ -178,33 +179,38 @@ export const RoomPlayer: React.FC<RoomPlayerProps> = ({
               )}
             </div>
 
-            {/* Playback Controls & Volume */}
-            <div className="w-full flex flex-col items-center gap-3.5 pt-1">
-              {/* Center Buttons */}
-              <div className="flex items-center justify-center gap-5">
+            {/* Playback Controls Bar: Waveform (Left) | Hero Controls (Dead Center) | Volume (Right) */}
+            <div className="relative w-full flex items-center justify-center pt-1 min-h-[56px]">
+              {/* Left: Synchronized Audio Wave Visualizer - Pinned to Left Margin */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
+                <AudioWaveEffect isPlaying={isPlaying} />
+              </div>
+
+              {/* Center: Play / Pause Hero & Skip Buttons - Guaranteed Exact 50% Center */}
+              <div className="flex items-center justify-center gap-5 sm:gap-6">
                 {/* Skip Back */}
                 <button
                   onClick={handlePrevTrack}
                   disabled={!canControl}
-                  className="w-9 h-9 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                  className="w-10 h-10 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed active:scale-95"
                   title={canControl ? 'Restart track' : 'Controlled by host'}
                 >
-                  <SkipBack className="w-4 h-4 fill-current" />
+                  <SkipBack className="w-5 h-5 fill-current" />
                 </button>
 
                 {/* Play / Pause Hero Button */}
                 <button
                   onClick={togglePlay}
                   disabled={!canControl}
-                  className="w-13 h-13 rounded-full bg-zinc-100 text-zinc-950 flex items-center justify-center hover:bg-white active:scale-95 transition-all shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-bold"
+                  className="w-14 h-14 rounded-full bg-zinc-100 text-zinc-950 flex items-center justify-center hover:bg-white active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-bold"
                   title={canControl ? (isPlaying ? 'Pause' : 'Play') : 'Controlled by host'}
                 >
                   {!canControl ? (
                     <Lock className="w-5 h-5 text-zinc-700" />
                   ) : isPlaying ? (
-                    <Pause className="w-5 h-5 fill-current" />
+                    <Pause className="w-6 h-6 fill-current" />
                   ) : (
-                    <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                    <Play className="w-6 h-6 fill-current translate-x-0.5" />
                   )}
                 </button>
 
@@ -212,24 +218,24 @@ export const RoomPlayer: React.FC<RoomPlayerProps> = ({
                 <button
                   onClick={handleNextTrack}
                   disabled={!canControl || queue.length === 0}
-                  className="w-9 h-9 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+                  className="w-10 h-10 rounded-full text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed active:scale-95"
                   title={canControl ? 'Next from queue' : 'Controlled by host'}
                 >
-                  <SkipForward className="w-4 h-4 fill-current" />
+                  <SkipForward className="w-5 h-5 fill-current" />
                 </button>
               </div>
 
-              {/* Volume Control */}
-              <div className="flex items-center justify-center gap-2.5 max-w-[200px] w-full pt-0.5">
+              {/* Right: Audio Volume - Pinned to Right Margin */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 <button
                   onClick={toggleLocalMute}
-                  className="text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
+                  className="text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer shrink-0"
                   title={isLocalMuted ? 'Unmute' : 'Mute'}
                 >
                   {isLocalMuted || localVolume === 0 ? (
-                    <VolumeX className="w-3.5 h-3.5 text-red-400" />
+                    <VolumeX className="w-4 h-4 text-red-400" />
                   ) : (
-                    <Volume2 className="w-3.5 h-3.5" />
+                    <Volume2 className="w-4 h-4" />
                   )}
                 </button>
                 <input
@@ -242,7 +248,8 @@ export const RoomPlayer: React.FC<RoomPlayerProps> = ({
                     if (isLocalMuted) toggleLocalMute();
                     setLocalVolume(parseFloat(e.target.value));
                   }}
-                  className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-zinc-100"
+                  className="w-16 sm:w-20 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400"
+                  title={`Volume: ${Math.round((isLocalMuted ? 0 : localVolume) * 100)}%`}
                 />
               </div>
             </div>
