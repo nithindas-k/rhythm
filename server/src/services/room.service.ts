@@ -132,8 +132,8 @@ export class RoomService implements IRoomService {
         joinedAt: new Date(),
       };
 
-      const updated = await this.roomRepository.addMember(room._id.toString(), newMember);
-      return toRoomDto(updated ?? (await this.roomRepository.findByCode(code))!);
+      await this.roomRepository.addMember(room._id.toString(), newMember);
+      return this.getRoomByCode(code, userId);
     }
 
     // Existing member reconnecting — update their socketId

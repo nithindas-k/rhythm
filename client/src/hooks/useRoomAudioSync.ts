@@ -56,9 +56,14 @@ export function useRoomAudioSync(roomCode: string) {
 
     engine.init('', {
       onBuffering: (isBuffering) => {
+        const state = useRoomStore.getState().playbackState;
+        // Only report buffering if room is actively playing and engine is already initialized
+        if (!state?.isPlaying) return;
+        if (!engine.isReady() && isBuffering) return;
+
         if (isBufferingReportedRef.current !== isBuffering) {
           isBufferingReportedRef.current = isBuffering;
-          const version = useRoomStore.getState().playbackState?.version ?? 0;
+          const version = state.version ?? 0;
           socketService.getSocket()?.emit(SOCKET_EVENTS.BUFFERING_STATE, {
             roomCode,
             isBuffering,
@@ -129,7 +134,7 @@ export function useRoomAudioSync(roomCode: string) {
       });
     };
 
-    // ── 5. Scheduled Start: SYNC_START ──────────────────────────────────────
+  
     const handleSyncStart = async (data: {
       trackId: string;
       positionMs: number;
@@ -190,7 +195,7 @@ export function useRoomAudioSync(roomCode: string) {
     };
   }, [roomCode, setCurrentSong, setAudioGateLocked]);
 
-  // ── 6. Authoritative State (Pause / Seek) ─────────────────────────────────
+  // ── 6. Authoritative State (Pause / Seek / Join in Progress) ───────────────
   useEffect(() => {
     if (!playbackState) return;
     if (playbackState.version < lastPlaybackVersionRef.current) return;
@@ -211,18 +216,44 @@ export function useRoomAudioSync(roomCode: string) {
       }
       setCurrentPositionMs(playbackState.positionMs);
     } else {
-      if (!engine.isPlaying()) {
-        engine.cue(playbackState.trackId || '', playbackState.positionMs, currentSong?.audioUrl).then(async () => {
-          try {
-            await engine.play();
-          } catch {
-            setNeedsUserInteraction(true);
-            setAudioGateLocked(true);
-          }
-        });
+      const trackId = playbackState.trackId;
+      if (!trackId) return;
+
+      const syncAndPlay = async (song: Song) => {
+        // Calculate exact real-time playback position accounting for elapsed time
+        const serverNow = Date.now() + clockOffsetRef.current;
+        const elapsedMs = Math.max(0, serverNow - (playbackState.serverTimestamp || Date.now()));
+        const targetPos = playbackState.positionMs + elapsedMs;
+
+        await engine.cue(trackId, targetPos, song.audioUrl);
+        engine.seekTo(targetPos);
+
+        try {
+          await engine.play();
+        } catch {
+          setNeedsUserInteraction(true);
+          setAudioGateLocked(true);
+        }
+      };
+
+      const currentLoadedSong = useRoomStore.getState().currentSong;
+      if (!currentLoadedSong || currentLoadedSong.id !== trackId) {
+        songService
+          .getById(trackId)
+          .then((song) => {
+            setCurrentSong(song);
+            syncAndPlay(song);
+          })
+          .catch((err) => {
+            console.error('Failed to load track on authoritative state update:', err);
+          });
+      } else {
+        if (!engine.isPlaying()) {
+          syncAndPlay(currentLoadedSong);
+        }
       }
     }
-  }, [playbackState, currentSong, setAudioGateLocked]);
+  }, [playbackState, currentSong, setAudioGateLocked, setCurrentSong]);
 
   // ── 7. Drift Correction (every 5s) ────────────────────────────────────────
   useEffect(() => {
